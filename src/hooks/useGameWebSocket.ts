@@ -98,7 +98,7 @@ export const useGameWebSocket = ({
   useEffect(() => {
     if (!isLive || !gameId) return
 
-    const wsUrl = `ws://127.0.0.1:8000/ws/games/${gameId}`
+    const wsUrl = `ws://${import.meta.env.VITE_API_URL}/ws/games/${gameId}`
     const ws = new WebSocket(wsUrl)
     wsRef.current = ws
 

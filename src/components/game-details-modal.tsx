@@ -111,7 +111,7 @@ export default function GameDetailsModal({ gameId, onClose }: GameDetailsModalPr
 
   const fetchGameDetails = async () => {
     try {
-      const response = await fetch(`import.meta.env.VITE_API_URL/games/${gameId}/details`)
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/games/${gameId}/details`)
       const data = await response.json()
       setDetails(data.details)
     } catch (error) {
@@ -123,7 +123,7 @@ export default function GameDetailsModal({ gameId, onClose }: GameDetailsModalPr
 
   const fetchPlayByPlay = async () => {
     try {
-      const response = await fetch(`import.meta.env.VITE_API_URL/games/${gameId}/playbyplay`)
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/games/${gameId}/playbyplay`)
       const data = await response.json()
       setPlayByPlay(data.play_by_play || [])
     } catch (error) {
