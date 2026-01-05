@@ -26,8 +26,16 @@ interface Game {
 }
 
 export default function GamesListPage() {
+    // Função para formatar data no horário local (YYYY-MM-DD)
+    const formatDateToLocalString = (date: Date) => {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+    }
+
     const [games, setGames] = useState<Game[]>([])
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
+    const [selectedDate, setSelectedDate] = useState(formatDateToLocalString(new Date()))
     const [loading, setLoading] = useState(false)
     const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
 
@@ -57,8 +65,8 @@ export default function GamesListPage() {
             { label: string; variant: "default" | "destructive" | "outline" | "secondary" }
         > = {
             live: { label: "AO VIVO", variant: "destructive" },
-            upcoming: { label: "PROGRAMADO", variant: "outline" },
-            final: { label: "FINAL", variant: "secondary" },
+            "pre-live": { label: "PROGRAMADO", variant: "outline" },
+            finished: { label: "FINAL", variant: "secondary" },
         }
 
         const config = statusConfig[status] || { label: status.toUpperCase(), variant: "default" }
@@ -70,13 +78,15 @@ export default function GamesListPage() {
     }
 
     const changeDate = (days: number) => {
-        const date = new Date(selectedDate)
+        const date = new Date(selectedDate + 'T00:00:00') // Usar horário local explícito
         date.setDate(date.getDate() + days)
-        setSelectedDate(date.toISOString().split("T")[0])
+        setSelectedDate(formatDateToLocalString(date))
     }
 
     const formatDate = (dateString: string) => {
-        const date = new Date(dateString)
+        // Parse a data no formato YYYY-MM-DD no horário local
+        const [year, month, day] = dateString.split('-').map(Number)
+        const date = new Date(year, month - 1, day) // month é 0-indexed no JavaScript
         return date.toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
     }
 
@@ -89,6 +99,26 @@ export default function GamesListPage() {
             return `${minutes}:${seconds.toString().padStart(2, "0")}`
         }
         return time
+    }
+
+    // Função auxiliar para obter URL do logo do time
+    const getTeamLogoUrl = (teamId: number) => {
+        return `https://cdn.nba.com/logos/nba/${teamId}/primary/L/logo.svg`
+    }
+
+    // Função para ordenar jogos por status: live primeiro, depois upcoming, depois final
+    const sortGamesByStatus = (games: Game[]): Game[] => {
+        const statusOrder: Record<string, number> = {
+            live: 0,
+            "pre-live": 1,
+            finished: 2,
+        }
+
+        return [...games].sort((a, b) => {
+            const orderA = statusOrder[a.status] ?? 999
+            const orderB = statusOrder[b.status] ?? 999
+            return orderA - orderB
+        })
     }
 
 
@@ -142,7 +172,7 @@ export default function GamesListPage() {
                     </Card>
                 ) : (
                     <div className="space-y-3">
-                        {games.map((game) => (
+                        {sortGamesByStatus(games).map((game) => (
                             <Card
                                 key={game.gameId}
                                 className="p-4 hover:bg-accent/50 transition-colors cursor-pointer border-border"
@@ -162,29 +192,37 @@ export default function GamesListPage() {
                                     {/* Away Team */}
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3 flex-1">
-                                            <div className="h-12 w-12 rounded-lg bg-secondary/50 flex items-center justify-center">
-                                                <span className="text-lg font-bold text-foreground">{game.awayTeamAbbr}</span>
+                                            <div className="h-12 w-12 rounded-lg bg-secondary/50 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+                                                <img 
+                                                    src={getTeamLogoUrl(game.awayTeamId)} 
+                                                    alt={game.awayTeamName}
+                                                    className="h-full w-full object-contain p-1"
+                                                />
                                             </div>
-                                            <div className="flex-1">
-                                                <p className="font-semibold text-foreground">{game.awayTeamName}</p>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-foreground truncate">{game.awayTeamName}</p>
                                                 <p className="text-xs text-muted-foreground">Visitante</p>
                                             </div>
                                         </div>
-                                        <div className="text-3xl font-bold text-foreground tabular-nums">{game.awayScore || "-"}</div>
+                                        <div className="text-3xl font-bold text-foreground tabular-nums flex-shrink-0">{game.awayScore || "-"}</div>
                                     </div>
 
                                     {/* Home Team */}
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3 flex-1">
-                                            <div className="h-12 w-12 rounded-lg bg-secondary/50 flex items-center justify-center">
-                                                <span className="text-lg font-bold text-foreground">{game.homeTeamAbbr}</span>
+                                            <div className="h-12 w-12 rounded-lg bg-secondary/50 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+                                                <img 
+                                                    src={getTeamLogoUrl(game.homeTeamId)} 
+                                                    alt={game.homeTeamName}
+                                                    className="h-full w-full object-contain p-1"
+                                                />
                                             </div>
-                                            <div className="flex-1">
-                                                <p className="font-semibold text-foreground">{game.homeTeamName}</p>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-foreground truncate">{game.homeTeamName}</p>
                                                 <p className="text-xs text-muted-foreground">Casa</p>
                                             </div>
                                         </div>
-                                        <div className="text-3xl font-bold text-foreground tabular-nums">{game.homeScore || "-"}</div>
+                                        <div className="text-3xl font-bold text-foreground tabular-nums flex-shrink-0">{game.homeScore || "-"}</div>
                                     </div>
                                 </div>
 

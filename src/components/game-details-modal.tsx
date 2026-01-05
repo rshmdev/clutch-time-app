@@ -24,6 +24,7 @@ interface GameDetails {
     state: string
   }
   homeTeam: {
+    teamId?: number
     teamCity: string
     teamName: string
     teamTricode: string
@@ -39,6 +40,7 @@ interface GameDetails {
     }>
   }
   awayTeam: {
+    teamId?: number
     teamCity: string
     teamName: string
     teamTricode: string
@@ -89,6 +91,8 @@ interface PlayByPlayAction {
   description: string
   scoreHome: string
   scoreAway: string
+  personId?: number
+  personIdsFilter?: number[]
 }
 
 export default function GameDetailsModal({ gameId, onClose }: GameDetailsModalProps) {
@@ -151,6 +155,16 @@ export default function GameDetailsModal({ gameId, onClose }: GameDetailsModalPr
     return clock
   }
 
+  // Função auxiliar para obter URL da foto do jogador
+  const getPlayerHeadshotUrl = (personId: number) => {
+    return `https://cdn.nba.com/headshots/nba/latest/260x190/${personId}.png`
+  }
+
+  // Função auxiliar para obter URL do logo do time
+  const getTeamLogoUrl = (teamId: number) => {
+    return `https://cdn.nba.com/logos/nba/${teamId}/primary/L/logo.svg`
+  }
+
   if (loading) {
     return (
       <Dialog open={true} onOpenChange={onClose}>
@@ -179,6 +193,18 @@ export default function GameDetailsModal({ gameId, onClose }: GameDetailsModalPr
           {/* Score Header */}
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div className="text-center">
+              {details.awayTeam.teamId && (
+                <div className="flex justify-center mb-2">
+                  <img 
+                    src={getTeamLogoUrl(details.awayTeam.teamId)} 
+                    alt={details.awayTeam.teamName}
+                    className="h-16 w-16 object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                </div>
+              )}
               <p className="text-sm text-muted-foreground mb-1">{details.awayTeam.teamCity}</p>
               <p className="text-2xl font-bold">{details.awayTeam.teamTricode}</p>
               <p className="text-4xl font-bold text-foreground mt-2">{details.awayTeam.score}</p>
@@ -187,6 +213,18 @@ export default function GameDetailsModal({ gameId, onClose }: GameDetailsModalPr
               </p>
             </div>
             <div className="text-center">
+              {details.homeTeam.teamId && (
+                <div className="flex justify-center mb-2">
+                  <img 
+                    src={getTeamLogoUrl(details.homeTeam.teamId)} 
+                    alt={details.homeTeam.teamName}
+                    className="h-16 w-16 object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                </div>
+              )}
               <p className="text-sm text-muted-foreground mb-1">{details.homeTeam.teamCity}</p>
               <p className="text-2xl font-bold">{details.homeTeam.teamTricode}</p>
               <p className="text-4xl font-bold text-foreground mt-2">{details.homeTeam.score}</p>
@@ -335,30 +373,64 @@ export default function GameDetailsModal({ gameId, onClose }: GameDetailsModalPr
                     <p className="text-muted-foreground">Nenhuma ação disponível ainda.</p>
                   </Card>
                 ) : (
-                  (details.status === 'live' ? playByPlay.slice().reverse() : playByPlay).map((action) => (
-                    <Card key={action.actionNumber} className={`p-3 ${isScoringAction(action) ? 'bg-accent' : ''}`}>
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {action.teamTricode && (
-                              <Badge variant="outline" className="text-xs">
-                                {action.teamTricode}
-                              </Badge>
-                            )}
-                            <span className="text-xs text-muted-foreground font-mono">
-                              Q{action.period} {formatClock(action.clock)}
-                            </span>
+                  (details.status === 'live' ? playByPlay.slice().reverse() : playByPlay).map((action) => {
+                    // Obter IDs dos jogadores envolvidos
+                    const playerIds: number[] = []
+                    if (action.personId) {
+                      playerIds.push(action.personId)
+                    }
+                    if (action.personIdsFilter && action.personIdsFilter.length > 0) {
+                      // Adicionar outros jogadores envolvidos, excluindo o principal
+                      action.personIdsFilter.forEach(id => {
+                        if (id !== action.personId && !playerIds.includes(id)) {
+                          playerIds.push(id)
+                        }
+                      })
+                    }
+
+                    return (
+                      <Card key={action.actionNumber} className={`p-4 ${isScoringAction(action) ? 'bg-accent' : ''}`}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-2">
+                              {playerIds.length > 0 && (
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  {playerIds.slice(0, 2).map((personId) => (
+                                    <div key={personId} className="relative">
+                                      <img
+                                        src={getPlayerHeadshotUrl(personId)}
+                                        alt="Jogador"
+                                        className="h-12 w-12 rounded-full object-cover border-2 border-border"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none'
+                                        }}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                {action.teamTricode && (
+                                  <Badge variant="outline" className="text-xs flex-shrink-0">
+                                    {action.teamTricode}
+                                  </Badge>
+                                )}
+                                <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                                  Q{action.period} {formatClock(action.clock)}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-sm">{action.description}</p>
                           </div>
-                          <p className="text-sm">{action.description}</p>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-sm font-mono font-semibold tabular-nums whitespace-nowrap">
+                              {action.scoreAway} - {action.scoreHome}
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-mono font-semibold tabular-nums">
-                            {action.scoreAway} - {action.scoreHome}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  ))
+                      </Card>
+                    )
+                  })
                 )}
               </TabsContent>
             </div>

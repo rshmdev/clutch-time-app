@@ -12,6 +12,8 @@ interface PlayByPlayAction {
   description: string
   scoreHome: string
   scoreAway: string
+  personId?: number
+  personIdsFilter?: number[]
 }
 
 interface GameDetails {
@@ -26,6 +28,7 @@ interface GameDetails {
     state: string
   }
   homeTeam: {
+    teamId?: number
     teamCity: string
     teamName: string
     teamTricode: string
@@ -41,6 +44,7 @@ interface GameDetails {
     }>
   }
   awayTeam: {
+    teamId?: number
     teamCity: string
     teamName: string
     teamTricode: string
