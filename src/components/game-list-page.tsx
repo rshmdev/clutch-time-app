@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, ChevronRight, Activity, TrendingUp } from "lucide-react"
+import { Calendar, ChevronRight } from "lucide-react"
 import GameDetailsModal from "./game-details-modal"
 
 interface Game {
