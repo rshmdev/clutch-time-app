@@ -38,8 +38,8 @@ export default function GamesListPage() {
     const fetchGames = async (date: string) => {
         setLoading(true)
         try {
-            // Substitua http://127.0.0.1:8000 pela URL da sua API
-            const response = await fetch(`http://127.0.0.1:8000/games/${date}`)
+            // Substitua import.meta.env.VITE_API_URL pela URL da sua API
+            const response = await fetch(`import.meta.env.VITE_API_URL/games/${date}`)
             const data = await response.json()
 
             console.log("[v0] Fetched games data:", data)
